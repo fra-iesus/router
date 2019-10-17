@@ -1,6 +1,7 @@
 # router
 Minimalistic PHP router with the ability of autoloading of classes, variables in the path, filters and redirects and localization
 
+```php
 $router_cfg = [
 	'routes' => [
 		[ 'dashboard', 'home#dashboard', 'get' ],
@@ -64,3 +65,4 @@ function render($template, $message = null) {
 
 $router = new Router($router_cfg);
 $router->process_route();
+```
