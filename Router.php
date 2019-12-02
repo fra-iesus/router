@@ -48,7 +48,7 @@ class Router {
 		}
 		$parts = $this->parse_route($route);
 		foreach ($parts as $index => $value) {
-			if (substr($value, 0, 1) == '$') {
+			if ($value[0] == '$') {
 				$val = $params ? $params[substr($value, 1)] : null;
 				if (isset($val)) {
 					$parts[$index] = $val;
@@ -87,7 +87,7 @@ class Router {
 		$parts = explode('|', $method);
 		$method = $parts[0];
 		$parts = explode('#', $method);
-		if (sizeof($parts) > 1) {
+		if (count($parts) > 1) {
 			$parts[0] = ucfirst($parts[0]);
 			if (class_exists($parts[0], false)) {
 				$valid = method_exists($parts[0], $parts[1]);
@@ -113,13 +113,13 @@ class Router {
 
 	function call_method($method, $args = []) {
 		$parts = explode('#', $method);
-		if (sizeof($parts) > 1) {
+		if (count($parts) > 1) {
 			$parts[0] = ucfirst($parts[0]);
 			$class = new $parts[0]();
 			$name = $parts[1];
 			return $class->$name($args);
 		}
-		if (is_array($args) && sizeof($args)) {
+		if (is_array($args) && count($args)) {
 			return call_user_func_array($method, $args);
 		}
 		return call_user_func($method);
@@ -145,9 +145,9 @@ class Router {
 			$parts = $this->parse_route($route[0]);
 			$curr = &$parsed;
 			foreach ($parts as $part) {
-				if (substr($part, 0, 1) == '$') {
+				if ($part[0] == '$') {
 					$param = substr($part, 1);
-					if (substr($param, 0, 1) == '_') {
+					if ($param[0] == '_') {
 						throw new Exception("Route parameter name cannot begin with underscore in route '$route[0]'");
 					}
 					if (!array_key_exists('params', $curr)) {
@@ -175,7 +175,7 @@ class Router {
 			if (!array_key_exists('methods', $curr)) {
 				$curr['methods'] = [];
 			}
-			if (sizeof($route) > 2) {
+			if (count($route) > 2) {
 				if (!$route[2]) {
 					$methods = ['ANY'];
 				} else {
@@ -194,8 +194,8 @@ class Router {
 					} else {
 						throw new Exception("Method '$method' is not allowed in route '$route[0]'.");
 					}
-					if (sizeof($route) > 3 || $this->_config['default_filter']) {
-						if (sizeof($route) < 4) {
+					if (count($route) > 3 || $this->_config['default_filter']) {
+						if (count($route) < 4) {
 							$route[3] = $this->_config['default_filter'];
 							$curr['methods'][$method]['filter'] = $this->_config['default_filter'];
 						} else {
@@ -204,10 +204,10 @@ class Router {
 							}
 						}
 						$curr['methods'][$method]['redirect'] = null;
-						if (sizeof($route) < 5 && $this->_config['default_redirect']) {
+						if (count($route) < 5 && $this->_config['default_redirect']) {
 							$route[4] = $this->_config['default_redirect'];
 						}
-						if (sizeof($route) > 4) {
+						if (count($route) > 4) {
 							if ($route[4]) {
 								$curr['methods'][$method]['redirect'] = $route[4];
 							} else {
@@ -231,7 +231,7 @@ class Router {
 		$renderer = $this->_config['static_renderer'];
 		if ($renderer) {
 			$renderer = explode('|', $renderer);
-			if (sizeof($renderer) > 1) {
+			if (count($renderer) > 1) {
 				$renderer[1] = explode(',', $renderer[1]);
 			}
 			if (!is_array($renderer[1])) {
@@ -307,7 +307,7 @@ class Router {
 			} elseif ($this->_config['allow_autoload']) {
 				$piece = str_replace('-', '_', $part);
 				$curr_pos = false;
-				if ($index == sizeof($url_parts)-1) {
+				if ($index == count($url_parts)-1) {
 					$target;
 					if ($controller_path) {
 						if ($this->is_valid_method("$controller_path#$piece")) {
@@ -347,8 +347,17 @@ class Router {
 			$allowed = array_key_exists('target', $matched_method) && $matched_method['target'];
 			if ($allowed && array_key_exists('filter', $matched_method) && $matched_method['filter']) {
 				$filter = explode('|', $matched_method['filter']);
-				if (sizeof($filter) > 1) {
+				if (count($filter) > 1) {
 					$filter[1] = explode(',', $filter[1]);
+					foreach ($filter[1] as $key => $value) {
+						if ($filter[1][$key][0] == '$') {
+							$filter[1][$key] = $params[substr($filter[1][$key], 1)];
+						}
+					}
+				} else {
+					if ($filter[1][0] == '$') {
+						$filter[1] = $params[substr($filter[1], 1)];
+					}
 				}
 				$allowed = $this->call_method($filter[0], $filter[1]);
 			}
@@ -367,7 +376,7 @@ class Router {
 				if (substr($redirect, 0, 7) == 'func://') {
 					$redirect = substr($redirect, 7);
 					$redirect = explode('|', $redirect);
-					if (sizeof($redirect) > 1) {
+					if (count($redirect) > 1) {
 						$redirect[1] = explode(',', $redirect[1]);
 					}
 					if ($this->is_valid_method($redirect[0])) {
